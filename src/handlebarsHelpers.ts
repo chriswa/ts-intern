@@ -12,13 +12,14 @@ Handlebars.registerHelper('listFiles', (directory: string, skipListCsv: string, 
 
     filesAndDirs.forEach(fileOrDir => {
       const absPath = path.join(dir, fileOrDir)
+      const filePath = path.relative(absDirectory, absPath)
       const stat = fs.statSync(absPath)
 
       if (stat.isDirectory()) {
         result += listFilesRecursive(absPath)
-      } else if (fileOrDir.endsWith('.ts') && !fileOrDir.startsWith('.') && !fileOrDir.startsWith('_') && !skipList.includes(fileOrDir)) {
+      } else if (fileOrDir.endsWith('.ts') && !fileOrDir.startsWith('.') && !fileOrDir.startsWith('_') && !skipList.includes(filePath)) {
         result += options.fn({
-          filePath: path.relative(absDirectory, absPath),
+          filePath,
           filePathNoExt: path.relative(absDirectory, absPath).replace(/\.ts$/, ''),
           basename: path.basename(absPath),
           basenameNoExt: path.basename(absPath, path.extname(absPath)),
