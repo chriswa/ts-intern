@@ -15,7 +15,7 @@ Handlebars.registerHelper('listFiles', (directory, options: HelperOptions) => {
       filePath,
       filePathNoExt: filePath.replace(/\.ts$/, ''),
       basename: path.basename(filePath),
-      basenameNoExt: path.basename(filePath, '.' + path.extname(filePath)),
+      basenameNoExt: path.basename(filePath, path.extname(filePath)),
     })
   })
 

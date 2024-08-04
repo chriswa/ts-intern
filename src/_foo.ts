@@ -1,20 +1,20 @@
-// import { InternTask.ts } from './'
-// registerClass(InternTask.ts)
-// import { api.ts } from './'
-// registerClass(api.ts)
-// import { cleanupOrphanedOutputFiles.ts } from './'
-// registerClass(cleanupOrphanedOutputFiles.ts)
-// import { cli.ts } from './'
-// registerClass(cli.ts)
-// import { handlebarsHelpers.ts } from './'
-// registerClass(handlebarsHelpers.ts)
-// import { logger.ts } from './'
-// registerClass(logger.ts)
-// import { outputFileManager.ts } from './'
-// registerClass(outputFileManager.ts)
-// import { processFilesRecursively.ts } from './'
-// registerClass(processFilesRecursively.ts)
-// import { util.ts } from './'
-// registerClass(util.ts)
-// import { watch.ts } from './'
-// registerClass(watch.ts)
+// import { InternTask } from './InternTask'
+// registerClass(InternTask)
+// import { api } from './api'
+// registerClass(api)
+// import { cleanupOrphanedOutputFiles } from './cleanupOrphanedOutputFiles'
+// registerClass(cleanupOrphanedOutputFiles)
+// import { cli } from './cli'
+// registerClass(cli)
+// import { handlebarsHelpers } from './handlebarsHelpers'
+// registerClass(handlebarsHelpers)
+// import { logger } from './logger'
+// registerClass(logger)
+// import { outputFileManager } from './outputFileManager'
+// registerClass(outputFileManager)
+// import { processFilesRecursively } from './processFilesRecursively'
+// registerClass(processFilesRecursively)
+// import { util } from './util'
+// registerClass(util)
+// import { watch } from './watch'
+// registerClass(watch)
