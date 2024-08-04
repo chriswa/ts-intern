@@ -11,7 +11,7 @@ export function isFilePathAnInternTaskFile(filePath: string) {
 }
 
 function convertTaskFilePathToOutputFilePath(taskFilePath: string) {
-  const basename = path.basename(taskFilePath).replace(/^_/, '_').replace(/\.codegen\.hbs/, '.ts')
+  const basename = path.basename(taskFilePath).replace(/\.codegen\.hbs/, '')
   return path.join(path.dirname(taskFilePath), basename)
 }
 
