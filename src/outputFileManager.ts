@@ -35,11 +35,13 @@ export const outputFileManager = {
   },
   delete(outputFilePaths: Array<string>): void {
     for (const outputFilePath of outputFilePaths) {
-      try {
-        fs.unlinkSync(outputFilePath)
-      }
-      catch (error) {
-        logger.error(`error unlinking ${outputFilePath}: ` + (error as any).toString())
+      if (fs.existsSync(outputFilePath)) {
+        try {
+          fs.unlinkSync(outputFilePath)
+        }
+        catch (error) {
+          logger.error(`error unlinking ${outputFilePath}: ` + (error as any).toString())
+        }
       }
       delete cacheData[outputFilePath]
     }

@@ -26,7 +26,11 @@ export class InternTask {
     this.template = Handlebars.compile(templateSource)
   }
   async run(): Promise<void> {
-    const content = this.template({ taskPath: this.taskPath })
+    const props = {
+      taskPath: this.taskPath,
+      taskPathBasename: path.basename(this.taskPath),
+    }
+    const content = this.template(props)
     const wasContentChanged = outputFileManager.write(this.outputPath, content)
     if (wasContentChanged) {
       logger.info(`ts-intern task '${this.taskPath}' wrote '${this.outputPath}'`)
