@@ -1,0 +1,11 @@
+// This is a generated file
+// Template: {{taskPathBasename}}
+
+export const message = 'Hello from ts-codegen!'
+
+// Generated classes would go here:
+{{#each (match (readdirRecursive ".") "*.ts")}}
+{{#unless (contains (array "_example.ts" "output1.ts" "output2.ts") this)}}
+// Found file: {{this}}
+{{/unless}}
+{{/each}}

@@ -1,25 +1,60 @@
 {
-  "name": "ts-intern",
+  "name": "@chriswa/ts-codegen",
   "version": "1.0.0",
-  "main": "dist/api.js",
-  "types": "dist/api.d.ts",
+  "type": "module",
+  "main": "src/api.ts",
+  "types": "src/api.ts",
   "bin": {
-    "ts-intern": "dist/cli.js"
+    "ts-codegen": "bin/ts-codegen.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "eslint . --fix",
+    "format:check": "eslint .",
+    "test": "vitest run",
+    "prepublishOnly": "pnpm run typecheck && pnpm run lint && pnpm run test"
   },
-  "author": "",
+  "author": "chriswa",
   "license": "MIT",
-  "description": "A simple, dynamic TS code generator",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chriswa/ts-codegen.git"
+  },
+  "keywords": [
+    "typescript",
+    "codegen",
+    "template",
+    "handlebars",
+    "vite",
+    "watch",
+    "cli"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "description": "A simple, dynamic TypeScript code generator with development watch support",
+  "files": [
+    "src",
+    "bin",
+    "README.md"
+  ],
   "devDependencies": {
+    "@chriswa/ts-config": "^0.0.6",
+    "@types/handlebars-helpers": "^0.5.6",
     "@types/node": "^22.1.0",
+    "eslint": "^9.36.0",
+    "globals": "^16.4.0",
     "typescript": "^5.5.4",
-    "vite": "^5.3.5"
+    "vite": "^5.3.5",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
+    "catch-unknown": "^2.0.0",
     "chokidar": "^3.6.0",
-    "handlebars": "^4.7.8"
+    "handlebars": "^4.7.8",
+    "handlebars-helpers": "^0.10.0",
+    "tsx": "^4.20.6"
   }
 }

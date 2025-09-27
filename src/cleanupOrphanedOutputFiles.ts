@@ -5,7 +5,7 @@ import { setDifference } from './util'
 export function cleanupOrphanedOutputFiles(oldOutputFilePaths: Set<string>, newOutputFilePaths: Set<string>) {
   const outputFilePathsToCleanUp = Array.from(setDifference(oldOutputFilePaths, newOutputFilePaths))
   if (outputFilePathsToCleanUp.length > 0) {
-    logger.info(`ts-intern unlinking orphaned output files: ${outputFilePathsToCleanUp.join(', ')}`)
+    logger.info(`ts-codegen unlinking orphaned output files: ${outputFilePathsToCleanUp.join(', ')}`)
     outputFileManager.delete(outputFilePathsToCleanUp)
   }
 }

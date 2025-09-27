@@ -14,7 +14,7 @@ async function _processFilesRecursively(
   callback: (relativePath: string) => Promise<void>,
 ): Promise<void> {
   const files = await fs.promises.readdir(currentDir, { withFileTypes: true })
-  
+
   for (const file of files) {
     const fullPath = path.join(currentDir, file.name)
     const newRelativePath = path.join(relativeDir, file.name)

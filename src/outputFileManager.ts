@@ -1,7 +1,7 @@
-import * as fs from 'fs'
 import { logger } from './logger'
+import * as fs from 'fs'
 
-const cacheFilePath = './.ts-intern.cache'
+const cacheFilePath = './.ts-codegen.cache'
 
 function loadCacheFile() {
   try {

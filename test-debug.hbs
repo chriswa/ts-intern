@@ -1,0 +1,3 @@
+{{#each (match (readdirRecursive ".subdir") "*.ts")}}
+// {{this}}
+{{/each}}

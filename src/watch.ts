@@ -1,10 +1,11 @@
-import * as chokidar from 'chokidar'
 import { cleanupOrphanedOutputFiles } from './cleanupOrphanedOutputFiles'
 import { InternTask, isFilePathAnInternTaskFile } from './InternTask'
 import { logger } from './logger'
 import { outputFileManager } from './outputFileManager'
+import { asError } from 'catch-unknown'
+import * as chokidar from 'chokidar'
 
-export async function watch(srcDir: string): Promise<void> {
+export function watch(srcDir: string): void {
   const oldOutputFilePaths = new Set(outputFileManager.getAllOutputFilePaths())
   const newOutputFilePaths = new Set<string>()
 
@@ -15,7 +16,7 @@ export async function watch(srcDir: string): Promise<void> {
   let isReady = false
   watcher.on('ready', () => {
     cleanupOrphanedOutputFiles(oldOutputFilePaths, newOutputFilePaths)
-    Array.from(tasksByPath.values()).forEach(task => task.run())
+    for (const task of Array.from(tasksByPath.values())) task.run()
     isReady = true
   })
   watcher.on('add', (filePath, _stats) => {
@@ -29,7 +30,7 @@ export async function watch(srcDir: string): Promise<void> {
     }
     else {
       if (isReady) {
-        Array.from(tasksByPath.values()).forEach(task => task.onFileAdd(filePath))
+        for (const task of Array.from(tasksByPath.values())) task.onFileAdd(filePath)
       }
     }
   })
@@ -41,7 +42,7 @@ export async function watch(srcDir: string): Promise<void> {
     }
     else {
       if (isReady) {
-        Array.from(tasksByPath.values()).forEach(task => task.onFileUnlink(filePath))
+        for (const task of Array.from(tasksByPath.values())) task.onFileUnlink(filePath)
       }
     }
   })
@@ -56,23 +57,23 @@ export async function watch(srcDir: string): Promise<void> {
     }
     else {
       if (isReady) {
-        Array.from(tasksByPath.values()).forEach(task => task.onFileChange(filePath))
+        for (const task of Array.from(tasksByPath.values())) task.onFileChange(filePath)
       }
     }
   })
   registerSignalsToShutdownWatcher(watcher)
 
-  logger.info(`ts-intern watching ${srcDir}. Press Ctrl+C to exit.`)
+  logger.info(`ts-codegen watching ${srcDir}. Press Ctrl+C to exit.`)
 }
 
 function registerSignalsToShutdownWatcher(watcher: chokidar.FSWatcher) {
   const handleShutdown = () => {
-    logger.info('Stopping ts-intern...')
+    logger.info('Stopping ts-codegen...')
     watcher.close().then(() => {
-      logger.info('ts-intern stopped')
+      logger.info('ts-codegen stopped')
       process.exit(0)
-    }).catch(err => {
-      logger.error('Error while stopping ts-intern: ' + err.toString())
+    }).catch((err: unknown) => {
+      logger.error('Error while stopping ts-codegen: ' + asError(err).message)
       process.exit(1)
     })
   }

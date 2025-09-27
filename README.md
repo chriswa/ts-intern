@@ -1,58 +1,144 @@
-# ts-intern
+# @chriswa/ts-codegen
 
-A simple, dynamic TS code generator with development "watch" support.
+A simple, dynamic TypeScript code generator with development "watch" support.
 
 ## What it does
 
-Scans the provided directory (and subdirs) for templates with filenames ending in `.codegen.hbs` and writes the processed template to an output file without that suffix.
+Scans the provided directory (and subdirs) for Handlebars templates with filenames ending in `.hbs` and writes the processed template to an output file of the same name (but with the extension changed from `.hbs` to `.ts`.) Uses [handlebars-helpers](https://github.com/helpers/handlebars-helpers) library for rich template functionality. Probably most useful for generating custom "barrel"-like files, listing all the files/classes in a directory.
 
-### Example
+## Installation
+
+```bash
+pnpm add @chriswa/ts-codegen
+```
+
+## Example
 
 Automatically import and register classes in a directory with a factory. In watch mode, the output file will be updated immediately when class files are created, renamed, and deleted.
 
-In `src/things/_index.ts.codegen.hbs`:
+**Template:** `src/things/_index.ts.hbs`
+```handlebars
+// Generated code - see *.hbs file
+
+import { myFactory } from '../factories'
+
+// Auto-import all TypeScript files in this directory (excluding templates and outputs)
+{{#each (match (readdirRecursive ".") "*.ts")}}
+{{#unless (contains (array "_index.ts" "_index.ts" "Base.ts") this)}}
+import { {{replace (basename this) ".ts" ""}} } from './{{replace this ".ts" ""}}'
+{{/unless}}
+{{/each}}
+
+// Register all classes with the factory
+{{#each (match (readdirRecursive ".") "*.ts")}}
+{{#unless (contains (array "_index.ts" "_index.ts" "Base.ts") this)}}
+myFactory.registerClass({{replace (basename this) ".ts" ""}})
+{{/unless}}
+{{/each}}
 ```
-// ts-intern generated code; see *.codegen.hbs file
 
-import { myFactory } from 'src/factories'
+**Generated:** `src/things/_index.ts`
+```typescript
+// Generated code - see *.hbs file
 
-{{#listFiles "." "Base.ts"}}
-import { {{basenameNoExt}} } from './{{filePathNoExt}}'
-myFactory.registerClass({{basenameNoExt}})
-{{/listFiles}}
-```
+import { myFactory } from '../factories'
 
-Produces `src/things/_index.ts`:
-```
-// ts-intern generated code; see *.codegen.hbs file
-
-import { myFactory } from 'src/factories'
-
+// Auto-import all TypeScript files in this directory (excluding templates and outputs)
 import { FooThing } from './FooThing'
-myFactory.registerClass(FooThing)
 import { BarThing } from './BarThing'
-myFactory.registerClass(BarThing)
 import { BaazThing } from './BaazThing'
+
+// Register all classes with the factory
+myFactory.registerClass(FooThing)
+myFactory.registerClass(BarThing)
 myFactory.registerClass(BaazThing)
 ```
 
+## Template Helpers
+
+This package includes all [handlebars-helpers](https://github.com/helpers/handlebars-helpers) plus custom helpers:
+
+### `readdirRecursive`
+Recursively reads directory contents and returns file paths relative to the template location.
+
+```handlebars
+{{#each (readdirRecursive ".")}}
+// Found: {{this}}
+{{/each}}
+```
+
+### Combined with handlebars-helpers
+Use powerful combinations for file processing:
+
+```handlebars
+{{#each (match (readdirRecursive ".") "*.ts")}}
+{{#unless (contains (array "excluded.ts" "another.ts") this)}}
+// Process: {{this}}
+{{/unless}}
+{{/each}}
+```
+
+Common helpers include:
+- `match` - Filter arrays with glob patterns
+- `contains` - Check if array contains value
+- `unless` - Conditional exclusion
+- `array` - Create arrays
+- `basename` - Get filename from path
+- `replace` - String replacement
+
 ## Usage
 
-### Usage from CLI:
+### CLI Usage
 
-```
-npx ts-intern build src
-npx ts-intern watch src
+```bash
+# Build once
+npx ts-codegen build src
+
+# Watch for changes
+npx ts-codegen watch src
+
+# Clean generated files
+npx ts-codegen clean src
 ```
 
-### Usage from vite:
+### Programmatic Usage
 
-In `vite.config.js`:
+```typescript
+import { build, watch, clean } from '@chriswa/ts-codegen'
+
+// Build templates
+await build('src')
+
+// Watch for changes
+watch('src')
+
+// Clean generated files
+clean('src')
 ```
-import { vitePluginTsIntern } from 'ts-intern'
+
+### Vite Plugin
+
+```typescript
+// vite.config.ts
+import { defineConfig } from 'vite'
+import { tsCodegenVitePlugin } from '@chriswa/ts-codegen'
+
 export default defineConfig({
   plugins: [
-    vitePluginTsIntern('src'),
+    tsCodegenVitePlugin('src'),
   ],
 })
 ```
+
+## TypeScript-First
+
+This package is TypeScript-first - it distributes TypeScript source files and uses [tsx](https://github.com/esbuild-kit/tsx) to run TypeScript directly. This provides:
+
+- ✅ **Better IDE support** - Jump to definitions, IntelliSense
+- ✅ **Type safety** - Full TypeScript checking
+- ✅ **Faster iteration** - No compilation step for consumers
+- ✅ **Modern tooling** - Built for TypeScript projects
+
+## License
+
+MIT

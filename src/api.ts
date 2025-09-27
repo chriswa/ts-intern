@@ -1,11 +1,11 @@
-import * as path from 'path'
-import { Plugin, ResolvedConfig, ViteDevServer } from 'vite'
 import { cleanupOrphanedOutputFiles } from './cleanupOrphanedOutputFiles'
 import { InternTask, isFilePathAnInternTaskFile } from './InternTask'
 import { logger } from './logger'
 import { outputFileManager } from './outputFileManager'
 import { processFilesRecursively } from './processFilesRecursively'
 import { watch } from './watch'
+import * as path from 'path'
+import { Plugin, ResolvedConfig, ViteDevServer } from 'vite'
 
 export { watch }
 
@@ -15,31 +15,30 @@ export async function build(srcDir: string): Promise<void> {
   await processFilesRecursively(srcDir, async (filePath) => {
     if (isFilePathAnInternTaskFile(filePath)) {
       const internTask = new InternTask(path.join(srcDir, filePath))
-      await internTask.run()
+      internTask.run()
       newOutputFilePaths.add(internTask.outputPath)
     }
+    return Promise.resolve()
   })
   cleanupOrphanedOutputFiles(oldOutputFilePaths, newOutputFilePaths)
-  logger.info(`ts-intern build complete`)
+  logger.info('ts-codegen build complete')
 }
 
-export async function clean(srcDir: string): Promise<void> {
+export function clean(_srcDir: string): void {
   outputFileManager.clean()
-  logger.info(`ts-intern clean complete`)
+  logger.info('ts-codegen clean complete')
 }
 
-
-export function vitePluginTsIntern(srcDir: string): Plugin {
+export function tsCodegenVitePlugin(srcDir: string): Plugin {
   return {
-    name: 'ts-intern',
+    name: 'ts-codegen',
     configResolved(config: ResolvedConfig) {
       logger.setLogger(config.logger)
     },
     buildStart() {
-      build(srcDir)
+      void build(srcDir)
     },
-    configureServer(server: ViteDevServer) {
-      server.watcher
+    configureServer(_server: ViteDevServer) {
       watch(srcDir)
     },
   }

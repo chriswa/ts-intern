@@ -7,26 +7,26 @@ const args = process.argv.slice(2)
 
 const mode = args.shift()
 if (mode === undefined) {
-  logger.error("CLI argument `mode` is required")
+  logger.error('CLI argument `mode` is required')
   process.exit(1)
 }
 
 let srcDir = args.shift()
-if (srcDir === undefined) {
-  srcDir = '.'
-}
+srcDir ??= '.'
 
 if (mode === 'build') {
-  void build(srcDir)
+  build(srcDir).catch((error: unknown) => {
+    console.error('Build failed:', error)
+    process.exit(1)
+  })
 }
 else if (mode === 'clean') {
-  void clean(srcDir)
+  clean(srcDir)
 }
 else if (mode === 'watch') {
-  void watch(srcDir)
+  watch(srcDir)
 }
 else {
-  logger.error("CLI argument `mode` must be either `build`, `clean`, or `watch`")
+  logger.error('CLI argument `mode` must be either `build`, `clean`, or `watch`')
   process.exit(1)
 }
-
