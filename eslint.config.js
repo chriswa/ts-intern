@@ -7,5 +7,8 @@ export default [
     languageOptions: {
       globals: globals.node
     }
+  },
+  {
+    ignores: ['test/expected/**', 'test/fixtures/**']
   }
 ]
