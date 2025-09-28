@@ -322,5 +322,4 @@ import { {{replace (basename this) ".ts" ""}} } from './{{replace this ".ts" ""}
     // Should not include non-TypeScript files
     expect(generatedContent).not.toContain('ignored.txt')
   })
-
 })
