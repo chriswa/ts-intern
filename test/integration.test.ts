@@ -266,4 +266,112 @@ export const {{camelcase entityType}}Classes = [
     expect(errorContent).toContain('Template file not found')
     expect(errorContent).toContain('throw new Error(')
   })
+
+  it('should use readdir from template directory, not working directory', async () => {
+    // Create a nested directory structure to test the bug
+    await fs.promises.mkdir(path.join(testDir, 'nested', 'subdir'), { recursive: true })
+
+    // Create files in the root test directory (should NOT be found by nested template)
+    await fs.promises.writeFile(path.join(testDir, 'rootFile.ts'), 'export class RootFile {}')
+    await fs.promises.writeFile(path.join(testDir, 'anotherRoot.ts'), 'export class AnotherRoot {}')
+
+    // Create files in the nested subdirectory (SHOULD be found by nested template)
+    await fs.promises.writeFile(path.join(testDir, 'nested', 'subdir', 'file1.ts'), 'export class File1 {}')
+    await fs.promises.writeFile(path.join(testDir, 'nested', 'subdir', 'file2.ts'), 'export class File2 {}')
+    await fs.promises.writeFile(path.join(testDir, 'nested', 'subdir', 'ignored.txt'), 'text file')
+
+    // Create a template in the nested subdirectory that uses readdir
+    const templateContent = `// Files in current directory:
+{{#each (readdir "." "*.ts")}}
+// Found: {{this}}
+{{/each}}
+
+// Generated imports:
+{{#each (readdir "." "*.ts")}}
+{{#unless (startsWith this "_")}}
+import { {{replace (basename this) ".ts" ""}} } from './{{replace this ".ts" ""}}'
+{{/unless}}
+{{/each}}`
+
+    await fs.promises.writeFile(path.join(testDir, 'nested', 'subdir', '_template.ts.hbs'), templateContent)
+
+    // Run the build command from the test directory (not the nested subdir)
+    const { stdout } = await execAsync(`node "${cliPath}" build .`, { cwd: testDir })
+    expect(stdout).toContain('ts-codegen build complete')
+
+    // Verify the output file was created
+    const outputFile = path.join(testDir, 'nested', 'subdir', '_template.ts')
+    const outputExists = await fs.promises.stat(outputFile).then(() => true).catch(() => false)
+    expect(outputExists).toBe(true)
+
+    // Read and verify the generated content
+    const generatedContent = await fs.promises.readFile(outputFile, 'utf-8')
+
+    // Should find files from the template's directory (nested/subdir), NOT from root
+    expect(generatedContent).toContain('// Found: file1.ts')
+    expect(generatedContent).toContain('// Found: file2.ts')
+    expect(generatedContent).toContain('import { file1 } from \'./file1\'')
+    expect(generatedContent).toContain('import { file2 } from \'./file2\'')
+
+    // Should NOT find files from the root directory
+    expect(generatedContent).not.toContain('rootFile.ts')
+    expect(generatedContent).not.toContain('anotherRoot.ts')
+    expect(generatedContent).not.toContain('import { rootFile }')
+    expect(generatedContent).not.toContain('import { anotherRoot }')
+
+    // Should not include non-TypeScript files
+    expect(generatedContent).not.toContain('ignored.txt')
+  })
+
+  it('should provide pascalcase helper that preserves existing case', async () => {
+    const templateContent = `// pascalcase tests:
+// fooBarBaz -> {{pascalcase "fooBarBaz"}}
+// foo-bar-baz -> {{pascalcase "foo-bar-baz"}}
+// foo_bar_baz -> {{pascalcase "foo_bar_baz"}}
+// foo bar baz -> {{pascalcase "foo bar baz"}}
+// XMLHttpRequest -> {{pascalcase "XMLHttpRequest"}}
+// iPhone -> {{pascalcase "iPhone"}}`
+
+    await fs.promises.writeFile(path.join(testDir, '_pascalcase.ts.hbs'), templateContent)
+
+    const { stdout } = await execAsync(`node "${cliPath}" build .`, { cwd: testDir })
+    expect(stdout).toContain('ts-codegen build complete')
+
+    const outputFile = path.join(testDir, '_pascalcase.ts')
+    const generatedContent = await fs.promises.readFile(outputFile, 'utf-8')
+
+    // Test that case is preserved properly
+    expect(generatedContent).toContain('// fooBarBaz -> FooBarBaz')
+    expect(generatedContent).toContain('// foo-bar-baz -> FooBarBaz')
+    expect(generatedContent).toContain('// foo_bar_baz -> FooBarBaz')
+    expect(generatedContent).toContain('// foo bar baz -> FooBarBaz')
+    expect(generatedContent).toContain('// XMLHttpRequest -> XMLHttpRequest')
+    expect(generatedContent).toContain('// iPhone -> IPhone')
+  })
+
+  it('should provide camelcase helper that preserves existing case', async () => {
+    const templateContent = `// camelcase tests:
+// FooBarBaz -> {{camelcase "FooBarBaz"}}
+// foo-bar-baz -> {{camelcase "foo-bar-baz"}}
+// foo_bar_baz -> {{camelcase "foo_bar_baz"}}
+// foo bar baz -> {{camelcase "foo bar baz"}}
+// XMLHttpRequest -> {{camelcase "XMLHttpRequest"}}
+// iPhone -> {{camelcase "iPhone"}}`
+
+    await fs.promises.writeFile(path.join(testDir, '_camelcase.ts.hbs'), templateContent)
+
+    const { stdout } = await execAsync(`node "${cliPath}" build .`, { cwd: testDir })
+    expect(stdout).toContain('ts-codegen build complete')
+
+    const outputFile = path.join(testDir, '_camelcase.ts')
+    const generatedContent = await fs.promises.readFile(outputFile, 'utf-8')
+
+    // Test that case is preserved properly
+    expect(generatedContent).toContain('// FooBarBaz -> fooBarBaz')
+    expect(generatedContent).toContain('// foo-bar-baz -> fooBarBaz')
+    expect(generatedContent).toContain('// foo_bar_baz -> fooBarBaz')
+    expect(generatedContent).toContain('// foo bar baz -> fooBarBaz')
+    expect(generatedContent).toContain('// XMLHttpRequest -> xMLHttpRequest')
+    expect(generatedContent).toContain('// iPhone -> iPhone')
+  })
 })

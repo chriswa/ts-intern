@@ -42,6 +42,88 @@ Handlebars.registerHelper('readdirRecursive', (directory: string, options: Handl
   return readRecursive(absDirectory)
 })
 
+// Override handlebars-helpers readdir to be template-location-aware
+Handlebars.registerHelper('readdir', (directory: string, filter: unknown, options: Handlebars.HelperOptions) => {
+  // Handle case where filter is not provided (options becomes second parameter)
+  if (typeof filter === 'object' && filter && 'data' in filter) {
+    options = filter as Handlebars.HelperOptions
+    filter = undefined
+  }
+
+  const taskPath = (options.data as { root?: { taskPath?: string } }).root?.taskPath
+  const absDirectory = path.resolve(path.dirname(taskPath ?? '.'), directory)
+
+  // Read directory contents
+  const files = fs.readdirSync(absDirectory)
+  const fullPaths = files.map((fp) => path.join(absDirectory, fp))
+
+  // Apply filter if provided
+  if (filter === undefined) {
+    return files // Return just filenames for compatibility
+  }
+
+  if (typeof filter === 'function') {
+    return (filter as (files: Array<string>) => Array<string>)(fullPaths)
+  }
+
+  if (filter instanceof RegExp) {
+    return fullPaths.filter((fp) => filter.test(fp)).map((fp) => path.basename(fp))
+  }
+
+  // Handle glob patterns (like "*.ts")
+  if (typeof filter === 'string') {
+    // Simple glob matching for common patterns
+    if (filter.startsWith('*.')) {
+      const extension = filter.slice(1) // Remove the *
+      return files.filter((fp) => fp.endsWith(extension))
+    }
+    // Handle other filter types like 'isFile', 'isDirectory'
+    if (['isFile', 'isDirectory'].includes(filter)) {
+      return fullPaths.filter((fp) => {
+        const stat = fs.statSync(fp)
+        return stat[filter as 'isFile' | 'isDirectory']()
+      }).map((fp) => path.basename(fp))
+    }
+  }
+
+  return files
+})
+
+// Override pascalcase helper to preserve case of existing words
+Handlebars.registerHelper('pascalcase', (str: string) => {
+  if (typeof str !== 'string') return ''
+
+  // Split on word boundaries (spaces, dashes, underscores, and camelCase boundaries)
+  const words = str
+    .split(/[\s\-_]+|(?=[A-Z])/)
+    .filter((word) => word.length > 0)
+
+  // Capitalize first letter of each word, preserve rest
+  return words
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join('')
+})
+
+// Override camelcase helper to preserve case of existing words
+Handlebars.registerHelper('camelcase', (str: string) => {
+  if (typeof str !== 'string') return ''
+
+  // Split on word boundaries (spaces, dashes, underscores, and camelCase boundaries)
+  const words = str
+    .split(/[\s\-_]+|(?=[A-Z])/)
+    .filter((word) => word.length > 0)
+
+  if (words.length === 0) return ''
+
+  // First word stays as-is (or lowercase first letter), rest get capitalized first letter
+  const firstWord = words[0]!.charAt(0).toLowerCase() + words[0]!.slice(1)
+  const restWords = words
+    .slice(1)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+
+  return [firstWord, ...restWords].join('')
+})
+
 // Cache for tsconfig path resolution to avoid repeated file reads
 interface TsconfigCacheEntry {
   matchPath: ReturnType<typeof createMatchPath> | null
