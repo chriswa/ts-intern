@@ -1,5 +1,5 @@
 import { cleanupOrphanedOutputFiles } from './cleanupOrphanedOutputFiles'
-import { InternTask, isFilePathAnInternTaskFile } from './InternTask'
+import { CodegenTask, isFilePathACodegenTaskFile } from './CodegenTask'
 import { logger } from './logger'
 import { outputFileManager } from './outputFileManager'
 import { asError } from 'catch-unknown'
@@ -9,7 +9,7 @@ export function watch(srcDir: string): void {
   const oldOutputFilePaths = new Set(outputFileManager.getAllOutputFilePaths())
   const newOutputFilePaths = new Set<string>()
 
-  const tasksByPath = new Map<string, InternTask>()
+  const tasksByPath = new Map<string, CodegenTask>()
   const watcher = chokidar.watch(srcDir, {
     persistent: true,
   })
@@ -20,12 +20,12 @@ export function watch(srcDir: string): void {
     isReady = true
   })
   watcher.on('add', (filePath, _stats) => {
-    if (isFilePathAnInternTaskFile(filePath)) {
-      const internTask = new InternTask(filePath)
-      tasksByPath.set(filePath, internTask)
-      newOutputFilePaths.add(internTask.outputPath)
+    if (isFilePathACodegenTaskFile(filePath)) {
+      const codegenTask = new CodegenTask(filePath)
+      tasksByPath.set(filePath, codegenTask)
+      newOutputFilePaths.add(codegenTask.outputPath)
       if (isReady) {
-        internTask.run()
+        codegenTask.run()
       }
     }
     else {
@@ -35,9 +35,9 @@ export function watch(srcDir: string): void {
     }
   })
   watcher.on('unlink', (filePath) => {
-    const internTask = tasksByPath.get(filePath)
-    if (internTask !== undefined) {
-      internTask.clean()
+    const codegenTask = tasksByPath.get(filePath)
+    if (codegenTask !== undefined) {
+      codegenTask.clean()
       tasksByPath.delete(filePath)
     }
     else {
@@ -48,11 +48,11 @@ export function watch(srcDir: string): void {
   })
   watcher.on('change', (filePath, _stats) => {
     if (tasksByPath.has(filePath)) {
-      // assume it will output a file with the same name, so no need to delete the old InternTask's output file
-      const internTask = new InternTask(filePath)
-      tasksByPath.set(filePath, internTask)
+      // assume it will output a file with the same name, so no need to delete the old CodegenTask's output file
+      const codegenTask = new CodegenTask(filePath)
+      tasksByPath.set(filePath, codegenTask)
       if (isReady) {
-        internTask.run()
+        codegenTask.run()
       }
     }
     else {
@@ -67,16 +67,18 @@ export function watch(srcDir: string): void {
 }
 
 function registerSignalsToShutdownWatcher(watcher: chokidar.FSWatcher) {
-  const handleShutdown = () => {
+  const handleShutdown = async () => {
     logger.info('Stopping ts-codegen...')
-    watcher.close().then(() => {
+    try {
+      await watcher.close()
       logger.info('ts-codegen stopped')
       process.exit(0)
-    }).catch((err: unknown) => {
+    }
+    catch (err: unknown) {
       logger.error('Error while stopping ts-codegen: ' + asError(err).message)
       process.exit(1)
-    })
+    }
   }
-  process.on('SIGINT', handleShutdown)
-  process.on('SIGTERM', handleShutdown)
+  process.on('SIGINT', () => { void handleShutdown() })
+  process.on('SIGTERM', () => { void handleShutdown() })
 }

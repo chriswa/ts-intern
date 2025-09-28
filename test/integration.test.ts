@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { exec } from 'child_process'
-import { promisify } from 'util'
 import * as fs from 'fs'
 import * as path from 'path'
+import { promisify } from 'util'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 const execAsync = promisify(exec)
 
@@ -22,24 +22,25 @@ describe('Template Processing Integration Tests', () => {
 
   it('should process templates with new handlebars-helpers syntax', async () => {
     // Create test template
-    const templateContent = `// This is a generated file
+    const templateContent = `// Generated imports:
+{{#each (match (readdirRecursive ".") "*.ts")}}
+{{#unless (contains (array "_example.ts.hbs" "_example.ts" "output1.ts" "output2.ts") this)}}
+import { _{{replace (basename this) ".ts" ""}} } from './{{replace this ".ts" ""}}'
+{{/unless}}
+{{/each}}
+
+// This is a generated file
 // Template: {{taskPathBasename}}
 
 export const message = 'Hello from ts-codegen!'
-
-// Generated imports:
-{{#each (match (readdirRecursive ".") "*.ts")}}
-{{#unless (contains (array "_example.ts.hbs" "_example.ts" "output1.ts" "output2.ts") this)}}
-import { {{replace (basename this) ".ts" ""}} } from './{{replace this ".ts" ""}}'
-{{/unless}}
-{{/each}}
 
 // Generated classes:
 {{#each (match (readdirRecursive ".") "*.ts")}}
 {{#unless (contains (array "_example.ts.hbs" "_example.ts" "output1.ts" "output2.ts") this)}}
 // Found file: {{this}}
 {{/unless}}
-{{/each}}`
+{{/each}}
+`
 
     await fs.promises.writeFile(path.join(testDir, '_example.ts.hbs'), templateContent)
 
@@ -61,23 +62,11 @@ import { {{replace (basename this) ".ts" ""}} } from './{{replace this ".ts" ""}
 
     // Read and verify the generated content
     const generatedContent = await fs.promises.readFile(outputFile, 'utf-8')
-
-    // Should contain the static content
-    expect(generatedContent).toContain('This is a generated file')
-    expect(generatedContent).toContain('Hello from ts-codegen!')
-    expect(generatedContent).toContain('Template: _example.ts.hbs')
-
-    // Should contain imports for the test files (but not the excluded ones)
-    expect(generatedContent).toContain('import { TestClass } from \'./TestClass\'')
-    expect(generatedContent).toContain('import { AnotherClass } from \'./AnotherClass\'')
-    expect(generatedContent).not.toContain('output1.ts') // Should be excluded
-
-    // Should contain found file comments
-    expect(generatedContent).toContain('// Found file: TestClass.ts')
-    expect(generatedContent).toContain('// Found file: AnotherClass.ts')
-
-    // Should not process output1.ts (which should be excluded)
-    expect(generatedContent).not.toContain('import { ShouldBeSkipped }')
+    const expectedContent = await fs.promises.readFile(
+      path.join(__dirname, 'expected', 'integration-example.ts'),
+      'utf-8',
+    )
+    expect(generatedContent.trim()).toBe(expectedContent.trim())
   })
 
   it('should handle subdirectories recursively', async () => {
@@ -85,7 +74,8 @@ import { {{replace (basename this) ".ts" ""}} } from './{{replace this ".ts" ""}
     const templateContent = `// Recursive directory test
 {{#each (readdirRecursive ".")}}
 // {{this}}
-{{/each}}`
+{{/each}}
+`
 
     await fs.promises.writeFile(path.join(testDir, '_recursive.ts.hbs'), templateContent)
 
@@ -103,10 +93,10 @@ import { {{replace (basename this) ".ts" ""}} } from './{{replace this ".ts" ""}
     // Read and verify the generated content
     const outputFile = path.join(testDir, '_recursive.ts')
     const generatedContent = await fs.promises.readFile(outputFile, 'utf-8')
-
-    // Should find files at all levels
-    expect(generatedContent).toContain('// root.ts')
-    expect(generatedContent).toContain('// subdir/sub.ts')
-    expect(generatedContent).toContain('// subdir/nested/deep.ts')
+    const expectedContent = await fs.promises.readFile(
+      path.join(__dirname, 'expected', 'integration-recursive.ts'),
+      'utf-8',
+    )
+    expect(generatedContent.trim()).toBe(expectedContent.trim())
   })
 })

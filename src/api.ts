@@ -1,5 +1,5 @@
 import { cleanupOrphanedOutputFiles } from './cleanupOrphanedOutputFiles'
-import { InternTask, isFilePathAnInternTaskFile } from './InternTask'
+import { CodegenTask, isFilePathACodegenTaskFile } from './CodegenTask'
 import { logger } from './logger'
 import { outputFileManager } from './outputFileManager'
 import { processFilesRecursively } from './processFilesRecursively'
@@ -13,10 +13,10 @@ export async function build(srcDir: string): Promise<void> {
   const oldOutputFilePaths = new Set(outputFileManager.getAllOutputFilePaths())
   const newOutputFilePaths = new Set<string>()
   await processFilesRecursively(srcDir, async (filePath) => {
-    if (isFilePathAnInternTaskFile(filePath)) {
-      const internTask = new InternTask(path.join(srcDir, filePath))
-      internTask.run()
-      newOutputFilePaths.add(internTask.outputPath)
+    if (isFilePathACodegenTaskFile(filePath)) {
+      const codegenTask = new CodegenTask(path.join(srcDir, filePath))
+      codegenTask.run()
+      newOutputFilePaths.add(codegenTask.outputPath)
     }
     return Promise.resolve()
   })

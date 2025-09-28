@@ -5,7 +5,7 @@ import * as fs from 'fs'
 import Handlebars from 'handlebars'
 import * as path from 'path'
 
-export function isFilePathAnInternTaskFile(filePath: string) {
+export function isFilePathACodegenTaskFile(filePath: string) {
   const basename = path.basename(filePath)
   return basename.startsWith('_') && basename.endsWith('.hbs')
 }
@@ -15,7 +15,7 @@ function convertTaskFilePathToOutputFilePath(taskFilePath: string) {
   return path.join(path.dirname(taskFilePath), basename)
 }
 
-export class InternTask {
+export class CodegenTask {
   private template: HandlebarsTemplateDelegate
   public readonly outputPath: string
   constructor(

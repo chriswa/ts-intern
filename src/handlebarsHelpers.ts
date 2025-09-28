@@ -7,17 +7,18 @@ import * as path from 'path'
 helpers()
 
 // Add array helper if not provided by handlebars-helpers
-Handlebars.registerHelper('array', (...items: unknown[]) => {
+Handlebars.registerHelper('array', (...items: Array<unknown>) => {
   // Remove the options object (last parameter)
   return items.slice(0, -1)
 })
 
 // Add our custom recursive directory reader
 Handlebars.registerHelper('readdirRecursive', (directory: string, options: Handlebars.HelperOptions) => {
-  const absDirectory = path.resolve(path.dirname(options.data?.root.taskPath), directory)
+  const taskPath = (options.data as { root?: { taskPath?: string } }).root?.taskPath
+  const absDirectory = path.resolve(path.dirname(taskPath ?? '.'), directory)
 
-  const readRecursive = (dir: string): string[] => {
-    const results: string[] = []
+  const readRecursive = (dir: string): Array<string> => {
+    const results: Array<string> = []
     const items = fs.readdirSync(dir)
 
     for (const item of items) {
@@ -26,7 +27,8 @@ Handlebars.registerHelper('readdirRecursive', (directory: string, options: Handl
 
       if (stat.isDirectory()) {
         results.push(...readRecursive(fullPath))
-      } else {
+      }
+      else {
         const relativePath = path.relative(absDirectory, fullPath)
         results.push(relativePath)
       }
