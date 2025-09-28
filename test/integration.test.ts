@@ -101,4 +101,110 @@ export const message = 'Hello from ts-codegen!'
     )
     expect(generatedContent.trim()).toBe(expectedContent.trim())
   })
+
+  it('should clean up orphaned output files when templates are removed', async () => {
+    // Create a simple template file
+    const templateContent = `// This is a generated file from template
+// Template: {{taskPathBasename}}
+
+export const generatedMessage = 'This file was generated and should be cleaned up!'
+`
+
+    await fs.promises.writeFile(path.join(testDir, '_orphan.ts.hbs'), templateContent)
+
+    // First run: generate the output file
+    const { stdout: firstStdout } = await execAsync(`node "${cliPath}" build .`, { cwd: testDir })
+    expect(firstStdout).toContain('ts-codegen build complete')
+
+    // Verify the output file was created
+    const outputFile = path.join(testDir, '_orphan.ts')
+    const outputExists = await fs.promises.stat(outputFile).then(() => true).catch(() => false)
+    expect(outputExists).toBe(true)
+
+    // Verify the content is correct
+    const generatedContent = await fs.promises.readFile(outputFile, 'utf-8')
+    expect(generatedContent).toContain('This file was generated and should be cleaned up!')
+    expect(generatedContent).toContain('Template: _orphan.ts.hbs')
+
+    // Verify cache file was created and contains our output file
+    const cacheFile = path.join(testDir, '.ts-codegen.cache')
+    const cacheExists = await fs.promises.stat(cacheFile).then(() => true).catch(() => false)
+    expect(cacheExists).toBe(true)
+
+    const cacheContent = await fs.promises.readFile(cacheFile, 'utf-8')
+    expect(cacheContent).toContain('_orphan.ts')
+
+    // Remove the template file to make the output file orphaned
+    await fs.promises.unlink(path.join(testDir, '_orphan.ts.hbs'))
+
+    // Second run: should detect orphaned file and clean it up
+    const { stdout: secondStdout } = await execAsync(`node "${cliPath}" build .`, { cwd: testDir })
+    expect(secondStdout).toContain('ts-codegen unlinking orphaned output files')
+    expect(secondStdout).toContain('_orphan.ts')
+    expect(secondStdout).toContain('ts-codegen build complete')
+
+    // Verify the orphaned output file was removed
+    const outputExistsAfterCleanup = await fs.promises.stat(outputFile).then(() => true).catch(() => false)
+    expect(outputExistsAfterCleanup).toBe(false)
+
+    // Verify the cache was updated (should be empty or not contain the orphaned file)
+    const updatedCacheContent = await fs.promises.readFile(cacheFile, 'utf-8')
+    expect(updatedCacheContent).not.toContain('_orphan.ts')
+  })
+
+  it('should write template parsing errors to output files', async () => {
+    // Create a template with invalid Handlebars syntax (will fail during execution)
+    const invalidTemplateContent = `// This template has invalid syntax
+export const message = '{{invalid{{nested}}'
+`
+
+    await fs.promises.writeFile(path.join(testDir, '_parse-error.ts.hbs'), invalidTemplateContent)
+
+    // Run the build command - should handle parsing error gracefully
+    const { stdout } = await execAsync(`node "${cliPath}" build .`, { cwd: testDir })
+    expect(stdout).toContain('ts-codegen build complete')
+
+    // Verify the output file was created with error content
+    const outputFile = path.join(testDir, '_parse-error.ts')
+    const outputExists = await fs.promises.stat(outputFile).then(() => true).catch(() => false)
+    expect(outputExists).toBe(true)
+
+    // Read and verify the error content
+    const errorContent = await fs.promises.readFile(outputFile, 'utf-8')
+    expect(errorContent).toContain('⚠️  TEMPLATE ERROR ⚠️')
+    expect(errorContent).toContain('Template execution error') // Parsing errors show up as execution errors
+    expect(errorContent).toContain('Template: ')
+    expect(errorContent).toContain('_parse-error.ts.hbs')
+    expect(errorContent).toContain('throw new Error(')
+    expect(errorContent).toContain('This file contains an error instead of generated code')
+    expect(errorContent).toContain('Parse error on line') // Verify it's actually a parsing error
+  })
+
+  it('should write template execution errors to output files', async () => {
+    // Create a template that compiles but fails during execution
+    const failingTemplateContent = `// This template will fail during execution
+export const message = '{{nonExistentHelper "test"}}'
+`
+
+    await fs.promises.writeFile(path.join(testDir, '_exec-error.ts.hbs'), failingTemplateContent)
+
+    // Run the build command - should handle execution error gracefully
+    const { stdout } = await execAsync(`node "${cliPath}" build .`, { cwd: testDir })
+    expect(stdout).toContain('ts-codegen build complete')
+
+    // Verify the output file was created with error content
+    const outputFile = path.join(testDir, '_exec-error.ts')
+    const outputExists = await fs.promises.stat(outputFile).then(() => true).catch(() => false)
+    expect(outputExists).toBe(true)
+
+    // Read and verify the error content
+    const errorContent = await fs.promises.readFile(outputFile, 'utf-8')
+    expect(errorContent).toContain('⚠️  TEMPLATE ERROR ⚠️')
+    expect(errorContent).toContain('Template execution error')
+    expect(errorContent).toContain('Template: ')
+    expect(errorContent).toContain('_exec-error.ts.hbs')
+    expect(errorContent).toContain('throw new Error(')
+    expect(errorContent).toContain('This file contains an error instead of generated code')
+    expect(errorContent).toContain('nonExistentHelper')
+  })
 })
