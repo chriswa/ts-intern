@@ -207,4 +207,63 @@ export const message = '{{nonExistentHelper "test"}}'
     expect(errorContent).toContain('This file contains an error instead of generated code')
     expect(errorContent).toContain('nonExistentHelper')
   })
+
+  it('should support template inclusion with relative paths', async () => {
+    // Create a shared template
+    await fs.promises.mkdir(path.join(testDir, 'shared'), { recursive: true })
+    const sharedTemplateContent = `// Shared template logic
+// Entity type: {{entityType}}
+export const {{camelcase entityType}}Classes = [
+{{#each items}}
+  {{this}},
+{{/each}}
+]`
+
+    await fs.promises.writeFile(path.join(testDir, 'shared', 'entity-template.hbs'), sharedTemplateContent)
+
+    // Create a consumer template that includes the shared one
+    const consumerTemplateContent = '{{include "./shared/entity-template.hbs" entityType="User" items=(array "UserService" "UserModel")}}'
+
+    await fs.promises.writeFile(path.join(testDir, '_users.ts.hbs'), consumerTemplateContent)
+
+    // Run the build command
+    const { stdout } = await execAsync(`node "${cliPath}" build .`, { cwd: testDir })
+    expect(stdout).toContain('ts-codegen build complete')
+
+    // Verify the output file was created with included content
+    const outputFile = path.join(testDir, '_users.ts')
+    const outputExists = await fs.promises.stat(outputFile).then(() => true).catch(() => false)
+    expect(outputExists).toBe(true)
+
+    // Read and verify the generated content
+    const generatedContent = await fs.promises.readFile(outputFile, 'utf-8')
+    expect(generatedContent).toContain('// Shared template logic')
+    expect(generatedContent).toContain('// Entity type: User')
+    expect(generatedContent).toContain('export const userClasses = [')
+    expect(generatedContent).toContain('UserService,')
+    expect(generatedContent).toContain('UserModel,')
+  })
+
+  it('should handle include errors gracefully', async () => {
+    // Create a template that includes a non-existent file
+    const templateContent = '{{include "non-existent-template.hbs"}}'
+
+    await fs.promises.writeFile(path.join(testDir, '_include-error.ts.hbs'), templateContent)
+
+    // Run the build command - should handle include error gracefully
+    const { stdout } = await execAsync(`node "${cliPath}" build .`, { cwd: testDir })
+    expect(stdout).toContain('ts-codegen build complete')
+
+    // Verify the output file was created with error content
+    const outputFile = path.join(testDir, '_include-error.ts')
+    const outputExists = await fs.promises.stat(outputFile).then(() => true).catch(() => false)
+    expect(outputExists).toBe(true)
+
+    // Read and verify the error content
+    const errorContent = await fs.promises.readFile(outputFile, 'utf-8')
+    expect(errorContent).toContain('⚠️  INCLUDE ERROR ⚠️')
+    expect(errorContent).toContain('Template: non-existent-template.hbs')
+    expect(errorContent).toContain('Template file not found')
+    expect(errorContent).toContain('throw new Error(')
+  })
 })

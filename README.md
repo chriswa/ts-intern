@@ -86,6 +86,41 @@ Common helpers include:
 - `basename` - Get filename from path
 - `replace` - String replacement
 
+### `include`
+Include and process other template files with parameter passing. Supports relative paths and TypeScript path mapping.
+
+```handlebars
+{{include "./shared/entity-template.hbs" entityType="User" items=(array "UserService" "UserModel")}}
+```
+
+**Path Resolution:**
+- **Relative paths**: `./shared/template.hbs`, `../common/template.hbs`
+- **TypeScript paths**: `@/shared/template.hbs` (requires tsconfig.json with path mapping)
+
+**Template Composition Example:**
+
+**Shared Template** (`shared/entity-template.hbs`):
+```handlebars
+// Auto-generated {{entityType}} entities
+{{#each items}}
+import { {{this}} } from './{{this}}'
+{{/each}}
+
+export const {{camelcase entityType}}Classes = [
+{{#each items}}
+  {{this}},
+{{/each}}
+]
+```
+
+**Consumer Templates:**
+```handlebars
+{{include "./shared/entity-template.hbs" entityType="User" items=(array "UserService" "UserModel")}}
+```
+```handlebars
+{{include "@/shared/entity-template.hbs" entityType="Product" items=(array "ProductService" "ProductModel")}}
+```
+
 ## Usage
 
 ### CLI Usage
