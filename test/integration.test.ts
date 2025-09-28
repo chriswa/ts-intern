@@ -8,6 +8,8 @@ const execAsync = promisify(exec)
 
 describe('Template Processing Integration Tests', () => {
   const testDir = path.join(__dirname, 'temp-integration')
+  const projectRoot = path.dirname(__dirname)
+  const cliPath = path.join(projectRoot, 'bin', 'ts-codegen.js')
 
   beforeEach(async () => {
     // Clean up and create fresh test directory
@@ -49,8 +51,8 @@ export const message = 'Hello from ts-codegen!'
     await fs.promises.writeFile(path.join(testDir, 'AnotherClass.ts'), 'export class AnotherClass {}')
     await fs.promises.writeFile(path.join(testDir, 'output1.ts'), 'export class ShouldBeSkipped {}') // Should be skipped
 
-    // Run the build command
-    const { stdout } = await execAsync(`node bin/ts-codegen.js build ${testDir}`)
+    // Run the build command from test directory so cache file is created there
+    const { stdout } = await execAsync(`node "${cliPath}" build .`, { cwd: testDir })
 
     // Check that the build completed successfully
     expect(stdout).toContain('ts-codegen build complete')
@@ -87,8 +89,8 @@ export const message = 'Hello from ts-codegen!'
     await fs.promises.writeFile(path.join(testDir, 'subdir', 'sub.ts'), 'export class Sub {}')
     await fs.promises.writeFile(path.join(testDir, 'subdir', 'nested', 'deep.ts'), 'export class Deep {}')
 
-    // Run the build command
-    await execAsync(`node bin/ts-codegen.js build ${testDir}`)
+    // Run the build command from test directory so cache file is created there
+    await execAsync(`node "${cliPath}" build .`, { cwd: testDir })
 
     // Read and verify the generated content
     const outputFile = path.join(testDir, '_recursive.ts')

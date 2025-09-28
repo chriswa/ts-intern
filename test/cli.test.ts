@@ -9,6 +9,8 @@ const execAsync = promisify(exec)
 describe('CLI End-to-End Tests', () => {
   const testDir = path.join(__dirname, 'temp-test')
   const fixturesDir = path.join(__dirname, 'fixtures')
+  const projectRoot = path.dirname(__dirname)
+  const cliPath = path.join(projectRoot, 'bin', 'ts-codegen.js')
 
   beforeEach(async () => {
     // Create a temporary test directory
@@ -31,8 +33,8 @@ describe('CLI End-to-End Tests', () => {
   })
 
   it('should build handlebars templates using the CLI', async () => {
-    // Run the build command
-    const { stdout } = await execAsync(`node bin/ts-codegen.js build ${testDir}`)
+    // Run the build command from test directory so cache file is created there
+    const { stdout } = await execAsync(`node "${cliPath}" build .`, { cwd: testDir })
 
     // Check that the output file was created
     const outputFile = path.join(testDir, '_example.ts')
