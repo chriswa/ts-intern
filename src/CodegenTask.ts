@@ -94,14 +94,15 @@ export class CodegenTask {
       finalContent = generatedContent
     }
 
-    const wasContentChanged = outputFileManager.write(this.outputPath, finalContent)
+    const wasContentChanged = this.isHbsTsFile
+      ? outputFileManager.writeInPlace(this.outputPath, finalContent)
+      : outputFileManager.write(this.outputPath, finalContent)
     if (wasContentChanged) {
       logger.info(`ts-codegen task '${this.taskPath}' wrote '${this.outputPath}'`)
     }
   }
 
   private generateErrorContent(error: Error, errorType: string): string {
-    const errorMessage = `${errorType}: ${error.message}`
     const stackTrace = error.stack ?? 'No stack trace available'
 
     return `⚠️  TEMPLATE ERROR ⚠️
@@ -113,9 +114,7 @@ This file contains an error instead of generated code.
 Fix the template to resolve this issue.
 
 Full error details:
-${stackTrace}
-
-throw new Error(${JSON.stringify(errorMessage)});`
+${stackTrace}`
   }
 
   clean(): void {

@@ -1,0 +1,1 @@
+const regularCode = "no template here"

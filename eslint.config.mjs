@@ -9,6 +9,6 @@ export default [
     }
   },
   {
-    ignores: ['test/expected/**', 'test/fixtures/**']
+    ignores: ['test/expected/**', 'test/fixtures/**', 'examples/**', 'tmp-test*/**']
   }
 ]

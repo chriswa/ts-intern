@@ -255,8 +255,6 @@ Template: ${templatePath}
 Error: ${errorMessage}
 
 Fix the template path or the included template to resolve this issue.
-
-throw new Error(${JSON.stringify(`Include error: ${errorMessage}`)});
 `)
   }
 })

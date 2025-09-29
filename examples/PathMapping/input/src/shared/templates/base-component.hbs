@@ -1,0 +1,16 @@
+// Base component template
+// Component: {{componentName}}
+export interface {{componentName}}Props {
+  id: string;
+  className?: string;
+}
+
+export const {{componentName}}: React.FC<{{componentName}}Props> = (props) => {
+  return (
+    <div id={props.id} className={props.className}>
+      {{#each children}}
+      <{{this}} />
+      {{/each}}
+    </div>
+  );
+};

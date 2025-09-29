@@ -1,0 +1,1 @@
+export const template2 = true

@@ -43,6 +43,17 @@ export const outputFileManager = {
     fs.writeFileSync(outputFilePath, content)
     return true
   },
+  writeInPlace(filePath: string, content: string): boolean {
+    // For in-place modifications (like .hbs.ts files), don't add to cache
+    if (fs.existsSync(filePath)) {
+      const oldContent = fs.readFileSync(filePath, 'utf-8')
+      if (oldContent === content) {
+        return false // optimization to prevent filesystem writes when the file wouldn't actually change
+      }
+    }
+    fs.writeFileSync(filePath, content)
+    return true
+  },
   delete(outputFilePaths: Array<string>): void {
     for (const outputFilePath of outputFilePaths) {
       if (fs.existsSync(outputFilePath)) {

@@ -1,0 +1,14 @@
+{
+  "_include-error.ts": [
+    {
+      "operation": "replace",
+      "input": "\\(resolved to: /Users/[^)]+\\)",
+      "output": "(resolved to: ***TEMP_PATH***)"
+    },
+    {
+      "operation": "replace",
+      "input": "resolved to: /Users/[^)]+\\)",
+      "output": "resolved to: ***TEMP_PATH***)"
+    }
+  ]
+}

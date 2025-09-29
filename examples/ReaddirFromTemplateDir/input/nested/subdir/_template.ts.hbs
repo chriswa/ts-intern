@@ -1,0 +1,11 @@
+// Files in current directory:
+{{#each (readdir "." "*.ts")}}
+// Found: {{this}}
+{{/each}}
+
+// Generated imports:
+{{#each (readdir "." "*.ts")}}
+{{#unless (startsWith this "_")}}
+import { {{replace (basename this) ".ts" ""}} } from './{{replace this ".ts" ""}}'
+{{/unless}}
+{{/each}}

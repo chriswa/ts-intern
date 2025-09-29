@@ -1,0 +1,54 @@
+{
+  "_parse-error.ts": [
+    {
+      "operation": "replace",
+      "input": "at Parser\\.parseError \\(/Users/[^)]+\\)",
+      "output": "at Parser.parseError (***HANDLEBARS_PATH***)"
+    },
+    {
+      "operation": "replace",
+      "input": "at Parser\\.parse \\(/Users/[^)]+\\)",
+      "output": "at Parser.parse (***HANDLEBARS_PATH***)"
+    },
+    {
+      "operation": "replace",
+      "input": "at parseWithoutProcessing \\(/Users/[^)]+\\)",
+      "output": "at parseWithoutProcessing (***HANDLEBARS_PATH***)"
+    },
+    {
+      "operation": "replace",
+      "input": "at HandlebarsEnvironment\\.parse \\(/Users/[^)]+\\)",
+      "output": "at HandlebarsEnvironment.parse (***HANDLEBARS_PATH***)"
+    },
+    {
+      "operation": "replace",
+      "input": "at compileInput \\(/Users/[^)]+\\)",
+      "output": "at compileInput (***HANDLEBARS_PATH***)"
+    },
+    {
+      "operation": "replace",
+      "input": "at CodegenTask\\.ret \\[as template\\] \\(/Users/[^)]+\\)",
+      "output": "at CodegenTask.ret [as template] (***HANDLEBARS_PATH***)"
+    },
+    {
+      "operation": "replace",
+      "input": "at CodegenTask\\.run \\(/Users/[^)]+\\)",
+      "output": "at CodegenTask.run (***PROJECT_PATH***)"
+    },
+    {
+      "operation": "replace",
+      "input": "at /Users/[^:)]+:[0-9]+:[0-9]+",
+      "output": "at ***PROJECT_PATH***"
+    },
+    {
+      "operation": "replace",
+      "input": "at _processFilesRecursively \\(/Users/[^)]+\\)",
+      "output": "at _processFilesRecursively (***PROJECT_PATH***)"
+    },
+    {
+      "operation": "replace",
+      "input": "at async processFilesRecursively \\(/Users/[^)]+\\)",
+      "output": "at async processFilesRecursively (***PROJECT_PATH***)"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+// Generated imports:
+{{#each (match (readdirRecursive ".") "*.ts")}}
+{{#unless (contains (array "_example.ts.hbs" "_example.ts" "output1.ts" "output2.ts") this)}}
+import { _{{replace (basename this) ".ts" ""}} } from './{{replace this ".ts" ""}}'
+{{/unless}}
+{{/each}}
+
+// This is a generated file
+// Template: {{taskPathBasename}}
+
+export const message = 'Hello from ts-codegen!'
+
+// Generated classes:
+{{#each (match (readdirRecursive ".") "*.ts")}}
+{{#unless (contains (array "_example.ts.hbs" "_example.ts" "output1.ts" "output2.ts") this)}}
+// Found file: {{this}}
+{{/unless}}
+{{/each}}
