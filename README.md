@@ -4,7 +4,12 @@ A simple, dynamic TypeScript code generator with development "watch" support.
 
 ## What it does
 
-Scans the provided directory (and subdirs) for Handlebars templates with filenames ending in `.hbs` and writes the processed template to an output file of the same name (but with the extension changed from `.hbs` to `.ts`.) Uses [handlebars-helpers](https://github.com/helpers/handlebars-helpers) library for rich template functionality. Probably most useful for generating custom "barrel"-like files, listing all the files/classes in a directory.
+Scans the provided directory (and subdirs) for Handlebars templates and generates TypeScript code. Supports two template formats:
+
+1. **Standalone templates** (`.hbs` files) - `example.hbs` generates `example.ts`
+2. **Embedded templates** (`.hbs.ts` files) - Template and generated code in the same file
+
+Uses [handlebars-helpers](https://github.com/helpers/handlebars-helpers) library for template functionality. Primarily used for listing files in a directory and importing them, often with registration in factories or registries.
 
 ## Installation
 
@@ -14,7 +19,7 @@ pnpm add @chriswa/ts-codegen
 
 ## Example
 
-Automatically import and register classes in a directory with a factory. In watch mode, the output file will be updated immediately when class files are created, renamed, and deleted.
+Import and register classes in a directory with a factory. In watch mode, the output file is updated when class files are created, renamed, and deleted.
 
 **Template:** `src/things/_index.ts.hbs`
 ```handlebars
@@ -54,6 +59,34 @@ myFactory.registerClass(BarThing)
 myFactory.registerClass(BaazThing)
 ```
 
+## Embedded Templates
+
+Embedded templates (`.hbs.ts` files) are an alternative to standalone templates where the template and generated code exist in the same file. The template (as comments) comes first, followed by the generated code.
+
+**Before Processing:** `src/config.hbs.ts`
+```typescript
+// export const message = 'Hello from World!'
+// export const template = '{{taskPathBasename}}'
+
+// ============= GENERATED CODE =============
+// This section will be replaced by the code generator
+```
+
+**After Processing:** `src/config.hbs.ts`
+```typescript
+// export const message = 'Hello from World!'
+// export const template = '{{taskPathBasename}}'
+
+// ============= GENERATED CODE =============
+export const message = 'Hello from World!'
+export const template = 'config.hbs.ts'
+```
+
+**Format:**
+- Template is written as TypeScript comments (lines starting with `// `)
+- Generated code replaces content after `// ============= GENERATED CODE =============`
+- File is processed in-place, preserving the template for future regeneration
+
 ## Template Helpers
 
 This package includes all [handlebars-helpers](https://github.com/helpers/handlebars-helpers) plus custom helpers:
@@ -68,7 +101,7 @@ Recursively reads directory contents and returns file paths relative to the temp
 ```
 
 ### Combined with handlebars-helpers
-Use powerful combinations for file processing:
+Combine helpers for file processing:
 
 ```handlebars
 {{#each (match (readdirRecursive ".") "*.ts")}}
@@ -121,6 +154,27 @@ export const {{camelcase entityType}}Classes = [
 {{include "@/shared/entity-template.hbs" entityType="Product" items=(array "ProductService" "ProductModel")}}
 ```
 
+## Examples
+
+For comprehensive examples of how to use ts-codegen, see the [`examples/`](./examples/) directory. Each example contains:
+
+- `input/` - Template files and supporting code
+- `expected/` - Expected generated output
+- `meta/` - Configuration for handling non-deterministic content (when applicable)
+
+**Available Examples:**
+- [`Basic/`](./examples/Basic/) - Simple template variable substitution
+- [`HandlebarsHelpers/`](./examples/HandlebarsHelpers/) - Using helpers for file processing
+- [`EmbeddedTemplateErrors/`](./examples/EmbeddedTemplateErrors/) - Error handling in embedded templates
+- [`IncludeErrors/`](./examples/IncludeErrors/) - Include template error scenarios
+- [`OrphanedFiles/`](./examples/OrphanedFiles/) - Automatic cleanup of deleted templates
+- [`PathMapping/`](./examples/PathMapping/) - TypeScript path mapping with includes
+- [`ReaddirFromTemplateDir/`](./examples/ReaddirFromTemplateDir/) - Directory-relative helpers
+- [`Subdirectories/`](./examples/Subdirectories/) - Recursive template processing
+- [`TemplateInclusion/`](./examples/TemplateInclusion/) - Template composition with includes
+
+Run the examples with: `pnpm test` (runs all examples as tests)
+
 ## Usage
 
 ### CLI Usage
@@ -167,12 +221,7 @@ export default defineConfig({
 
 ## TypeScript-First
 
-This package is TypeScript-first - it distributes TypeScript source files and uses [tsx](https://github.com/esbuild-kit/tsx) to run TypeScript directly. This provides:
-
-- ✅ **Better IDE support** - Jump to definitions, IntelliSense
-- ✅ **Type safety** - Full TypeScript checking
-- ✅ **Faster iteration** - No compilation step for consumers
-- ✅ **Modern tooling** - Built for TypeScript projects
+This package distributes TypeScript source files and uses [tsx](https://github.com/esbuild-kit/tsx) to run TypeScript directly. This provides IDE support, type safety, and eliminates compilation steps for consumers.
 
 ## License
 

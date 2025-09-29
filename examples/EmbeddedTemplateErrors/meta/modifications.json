@@ -1,5 +1,5 @@
 {
-  "_parse-error.ts": [
+  "error.hbs.ts": [
     {
       "operation": "replace",
       "input": "at Parser\\.parseError \\(/Users/[^)]+\\)",
@@ -49,6 +49,43 @@
       "operation": "replace",
       "input": "at async processFilesRecursively \\(/Users/[^)]+\\)",
       "output": "at async processFilesRecursively (***PROJECT_PATH***)"
+    }
+  ],
+  "no-template.hbs.ts": [
+    {
+      "operation": "replace",
+      "input": "at parseEmbeddedTemplateFile \\(/Users/[^)]+\\)",
+      "output": "at parseEmbeddedTemplateFile (***PROJECT_PATH***)"
+    },
+    {
+      "operation": "replace",
+      "input": "at new CodegenTask \\(/Users/[^)]+\\)",
+      "output": "at new CodegenTask (***PROJECT_PATH***)"
+    },
+    {
+      "operation": "replace",
+      "input": "at /Users/[^:)]+:[0-9]+:[0-9]+",
+      "output": "at ***PROJECT_PATH***"
+    },
+    {
+      "operation": "replace",
+      "input": "at _processFilesRecursively \\(/Users/[^)]+\\)",
+      "output": "at _processFilesRecursively (***PROJECT_PATH***)"
+    },
+    {
+      "operation": "replace",
+      "input": "at async processFilesRecursively \\(/Users/[^)]+\\)",
+      "output": "at async processFilesRecursively (***PROJECT_PATH***)"
+    },
+    {
+      "operation": "replace",
+      "input": "at async build \\(/Users/[^)]+\\)",
+      "output": "at async build (***PROJECT_PATH***)"
+    },
+    {
+      "operation": "replace",
+      "input": "at async /Users/[^:)]+:[0-9]+:[0-9]+",
+      "output": "at async ***PROJECT_PATH***"
     }
   ]
 }

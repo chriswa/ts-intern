@@ -26,19 +26,19 @@ export class CodegenTask {
   private template: HandlebarsTemplateDelegate | null = null
   private templateError: Error | null = null
   private templateSource = ''
-  private isHbsTsFile: boolean
+  private isEmbeddedCodegenFile: boolean
   public readonly outputPath: string
 
   constructor(
     private taskPath: string,
   ) {
     this.outputPath = convertTaskFilePathToOutputFilePath(taskPath)
-    this.isHbsTsFile = taskPath.endsWith('.hbs.ts')
+    this.isEmbeddedCodegenFile = taskPath.endsWith('.hbs.ts')
 
     try {
       const fileContent = fs.readFileSync(taskPath, 'utf-8')
 
-      if (this.isHbsTsFile) {
+      if (this.isEmbeddedCodegenFile) {
         const parseResult = parseEmbeddedTemplateFile(fileContent)
         this.templateSource = parseResult.template
       }
@@ -82,7 +82,7 @@ export class CodegenTask {
     }
 
     let finalContent: string
-    if (this.isHbsTsFile) {
+    if (this.isEmbeddedCodegenFile) {
       // For .hbs.ts files, reconstruct prelude from templateSource and assemble
       const prelude = this.templateSource.split('\n').map((line) =>
         line.trim() === '' ? '//' : `// ${line}`,
@@ -94,7 +94,7 @@ export class CodegenTask {
       finalContent = generatedContent
     }
 
-    const wasContentChanged = this.isHbsTsFile
+    const wasContentChanged = this.isEmbeddedCodegenFile
       ? outputFileManager.writeInPlace(this.outputPath, finalContent)
       : outputFileManager.write(this.outputPath, finalContent)
     if (wasContentChanged) {
