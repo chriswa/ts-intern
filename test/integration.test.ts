@@ -1,3 +1,4 @@
+import { asError } from 'catch-unknown'
 import { exec } from 'child_process'
 import * as fs from 'fs'
 import * as path from 'path'
@@ -321,5 +322,181 @@ import { {{replace (basename this) ".ts" ""}} } from './{{replace this ".ts" ""}
 
     // Should not include non-TypeScript files
     expect(generatedContent).not.toContain('ignored.txt')
+  })
+
+  describe('.hbs.ts file support', () => {
+    it('should process .hbs.ts files with in-place generation', async () => {
+      // Create a .hbs.ts file with embedded template
+      const hbsTsContent = `// // Generated from: {{taskPathBasename}}
+// export const message = 'Hello from {{taskPathBasename}}!'`
+
+      await fs.promises.writeFile(path.join(testDir, 'example.hbs.ts'), hbsTsContent)
+
+      // Run the build command
+      const { stdout } = await execAsync(`node "${cliPath}" build .`, { cwd: testDir })
+      expect(stdout).toContain('ts-codegen build complete')
+
+      // Verify the file was processed in-place
+      const outputFile = path.join(testDir, 'example.hbs.ts')
+      const generatedContent = await fs.promises.readFile(outputFile, 'utf-8')
+
+      // Should match exact structure with template and generated content
+      const expectedContent = `// // Generated from: {{taskPathBasename}}
+// export const message = 'Hello from {{taskPathBasename}}!'
+
+// ============= GENERATED CODE =============
+// Generated from: example.hbs.ts
+export const message = 'Hello from example.hbs.ts!'`
+
+      expect(generatedContent).toBe(expectedContent)
+    })
+
+    it('should update .hbs.ts files when template changes', async () => {
+      // Create initial .hbs.ts file
+      const initialContent = '// export const initial = \'{{taskPathBasename}}\''
+
+      await fs.promises.writeFile(path.join(testDir, 'updateTest.hbs.ts'), initialContent)
+
+      // First build
+      await execAsync(`node "${cliPath}" build .`, { cwd: testDir })
+
+      let generatedContent = await fs.promises.readFile(path.join(testDir, 'updateTest.hbs.ts'), 'utf-8')
+      const expectedInitialContent = `// export const initial = '{{taskPathBasename}}'
+
+// ============= GENERATED CODE =============
+export const initial = 'updateTest.hbs.ts'`
+
+      expect(generatedContent).toBe(expectedInitialContent)
+
+      // Update the template
+      const updatedContent = `// export const updated = 'Modified: {{taskPathBasename}}'
+// export const count = 42`
+
+      await fs.promises.writeFile(path.join(testDir, 'updateTest.hbs.ts'), updatedContent)
+
+      // Second build
+      await execAsync(`node "${cliPath}" build .`, { cwd: testDir })
+
+      generatedContent = await fs.promises.readFile(path.join(testDir, 'updateTest.hbs.ts'), 'utf-8')
+      const expectedUpdatedContent = `// export const updated = 'Modified: {{taskPathBasename}}'
+// export const count = 42
+
+// ============= GENERATED CODE =============
+export const updated = 'Modified: updateTest.hbs.ts'
+export const count = 42`
+
+      expect(generatedContent).toBe(expectedUpdatedContent)
+    })
+
+    it('should handle .hbs.ts files with template errors gracefully', async () => {
+      // Create .hbs.ts file with invalid template
+      const errorContent = '// export const broken = \'{{invalidHelper "test"}}\''
+
+      await fs.promises.writeFile(path.join(testDir, 'errorTest.hbs.ts'), errorContent)
+
+      // Run build command
+      const { stdout } = await execAsync(`node "${cliPath}" build .`, { cwd: testDir })
+      expect(stdout).toContain('ts-codegen build complete')
+
+      // Verify error is written to the file
+      const generatedContent = await fs.promises.readFile(path.join(testDir, 'errorTest.hbs.ts'), 'utf-8')
+
+      // Test that it starts with the expected structure (template + banner)
+      expect(generatedContent.startsWith('// export const broken = \'{{invalidHelper "test"}}\'\n\n// ============= GENERATED CODE =============\n⚠️  TEMPLATE ERROR ⚠️')).toBe(true)
+      // Test that it contains the key error message parts
+      expect(generatedContent).toContain('Template execution error')
+      expect(generatedContent).toContain('errorTest.hbs.ts')
+    })
+
+    it('should handle .hbs.ts files with parsing errors gracefully', async () => {
+      // Create .hbs.ts file with invalid format (no commented template)
+      const invalidContent = 'export const notATemplate = \'this is not a template file\''
+
+      await fs.promises.writeFile(path.join(testDir, 'parseErrorTest.hbs.ts'), invalidContent)
+
+      // Run build command
+      const { stdout } = await execAsync(`node "${cliPath}" build .`, { cwd: testDir })
+      expect(stdout).toContain('ts-codegen build complete')
+
+      // Verify error is written to the file
+      const generatedContent = await fs.promises.readFile(path.join(testDir, 'parseErrorTest.hbs.ts'), 'utf-8')
+
+      // Should have exact error structure
+      const expectedContent = `//
+
+// ============= GENERATED CODE =============
+⚠️  TEMPLATE ERROR ⚠️
+
+Template: parseErrorTest.hbs.ts
+Template compilation error: No template found in .hbs.ts file. Expected lines starting with "// " (comment space)
+
+This file contains an error instead of generated code.
+Fix the template to resolve this issue.
+
+Full error details:
+Error: No template found in .hbs.ts file. Expected lines starting with "// " (comment space)
+    at parseHbsTsFile (/Users/chriswa/ts-intern/dist/hbsTsParser.js:56:15)
+    at new CodegenTask (/Users/chriswa/ts-intern/dist/CodegenTask.js:76:70)
+    at /Users/chriswa/ts-intern/dist/api.js:53:33
+    at _processFilesRecursively (/Users/chriswa/ts-intern/dist/processFilesRecursively.js:51:19)
+    at async processFilesRecursively (/Users/chriswa/ts-intern/dist/processFilesRecursively.js:40:5)
+    at async build (/Users/chriswa/ts-intern/dist/api.js:51:5)
+    at async /Users/chriswa/ts-intern/dist/cli.js:17:13
+
+throw new Error("Template compilation error: No template found in .hbs.ts file. Expected lines starting with \\"// \\" (comment space)");`
+
+      expect(generatedContent).toBe(expectedContent)
+    })
+
+    it('should validate generated .hbs.ts files are valid TypeScript', async () => {
+      // Create .hbs.ts file that generates valid TypeScript
+      const tsContent = `// interface {{capitalize (replace taskPathBasename ".hbs.ts" "")}}Config {
+//   name: string;
+//   value: number;
+// }
+//
+// export const {{camelcase (replace taskPathBasename ".hbs.ts" "")}}Config: {{capitalize (replace taskPathBasename ".hbs.ts" "")}}Config = {
+//   name: '{{taskPathBasename}}',
+//   value: 123
+// }`
+
+      await fs.promises.writeFile(path.join(testDir, 'validTs.hbs.ts'), tsContent)
+
+      // Run build command
+      await execAsync(`node "${cliPath}" build .`, { cwd: testDir })
+
+      // Verify the generated file is valid TypeScript by compiling it
+      try {
+        await execAsync('npx tsc --noEmit validTs.hbs.ts', { cwd: testDir })
+      }
+      catch (error) {
+        throw new Error(`Generated .hbs.ts file is not valid TypeScript: ${asError(error).message}`)
+      }
+
+      // Verify exact content structure
+      const generatedContent = await fs.promises.readFile(path.join(testDir, 'validTs.hbs.ts'), 'utf-8')
+      const expectedContent = `// interface {{capitalize (replace taskPathBasename ".hbs.ts" "")}}Config {
+//   name: string;
+//   value: number;
+// }
+//
+// export const {{camelcase (replace taskPathBasename ".hbs.ts" "")}}Config: {{capitalize (replace taskPathBasename ".hbs.ts" "")}}Config = {
+//   name: '{{taskPathBasename}}',
+//   value: 123
+// }
+
+// ============= GENERATED CODE =============
+interface ValidTsConfig {
+  name: string;
+  value: number;
+}
+
+export const validTsConfig: ValidTsConfig = {
+  name: 'validTs.hbs.ts',
+  value: 123
+}`
+
+      expect(generatedContent).toBe(expectedContent)
+    })
   })
 })
