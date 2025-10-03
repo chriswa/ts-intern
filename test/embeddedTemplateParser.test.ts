@@ -1,4 +1,4 @@
-import { assembleEmbeddedTemplateFile, parseEmbeddedTemplateFile } from '../src/embeddedTemplateParser'
+import { assembleEmbeddedTemplateFile, GENERATED_BANNER, parseEmbeddedTemplateFile } from '../src/embeddedTemplateParser'
 import { describe, expect, it } from 'vitest'
 
 describe('embeddedTemplateParser', () => {
@@ -45,7 +45,7 @@ const regularCode = 'this ends the template'`
     it('should handle files with existing generated content', () => {
       const content = `// export const message = 'Hello {{name}}!'
 
-// ============= GENERATED CODE =============
+${GENERATED_BANNER}
 export const message = 'Hello World!'`
 
       const result = parseEmbeddedTemplateFile(content)
@@ -94,7 +94,7 @@ export const value = 123`
 
 import { helper } from './utils'
 
-// ============= GENERATED CODE =============
+${GENERATED_BANNER}
 export const template = 'Hello!'`
 
       const result = parseEmbeddedTemplateFile(content)
@@ -116,8 +116,9 @@ import { helper } from './utils'`)
 
       expect(result).toBe(`// export const message = 'Hello {{name}}!'
 
-// ============= GENERATED CODE =============
-export const message = 'Hello World!'`)
+${GENERATED_BANNER}
+export const message = 'Hello World!'
+`)
     })
 
     it('should handle multiline content correctly', () => {
@@ -137,11 +138,12 @@ export const config: Config = { name: 'test' }`
 // }
 // export const config: Config = { name: '{{name}}' }
 
-// ============= GENERATED CODE =============
+${GENERATED_BANNER}
 interface Config {
   name: string;
 }
-export const config: Config = { name: 'test' }`)
+export const config: Config = { name: 'test' }
+`)
     })
   })
 })
